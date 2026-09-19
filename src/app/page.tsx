@@ -1,69 +1,141 @@
-import Image from "next/image";
+"use client";
+
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Background from "@/components/Background";
+import Balloons from "@/components/Balloons";
+import Celebration from "@/components/Celebration";
+import Chat from "@/components/Chat";
+import Contract from "@/components/Contract";
+import HeartTrail from "@/components/HeartTrail";
+import LockScreen from "@/components/LockScreen";
+import Terminal from "@/components/Terminal";
+import VibePicker from "@/components/VibePicker";
+import { config, type Vibe } from "@/lib/config";
+
+type Scene =
+  | "lock"
+  | "chat"
+  | "terminal"
+  | "question"
+  | "vibe"
+  | "contract"
+  | "party";
+
+function Scene({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.section
+      className="absolute inset-0 flex items-center justify-center overflow-y-auto py-6"
+      initial={{ opacity: 0, y: 24, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -24, scale: 0.98, filter: "blur(6px)" }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.section>
+  );
+}
+
+const TITLES = ["💌 open me", "👀 pls", "💌 it's important", "🥺 promise it's worth it"];
 
 export default function Home() {
+  const [scene, setScene] = useState<Scene>("lock");
+  const [vibe, setVibe] = useState<Vibe | null>(null);
+  const [signature, setSignature] = useState("");
+  const [muted, setMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // flicker the tab title so it nags her to open it
+  useEffect(() => {
+    let i = 0;
+    const id = setInterval(() => {
+      i = (i + 1) % TITLES.length;
+      document.title = TITLES[i];
+    }, 1800);
+    return () => clearInterval(id);
+  }, []);
+
+  const toChat = useCallback(() => {
+    setScene("chat");
+    audioRef.current?.play().catch(() => {});
+  }, []);
+  const toTerminal = useCallback(() => setScene("terminal"), []);
+  const toQuestion = useCallback(() => setScene("question"), []);
+  const toVibe = useCallback(() => setScene("vibe"), []);
+  const toContract = useCallback((v: Vibe) => {
+    setVibe(v);
+    setScene("contract");
+  }, []);
+  const toParty = useCallback((png: string) => {
+    setSignature(png);
+    setScene("party");
+  }, []);
+
+  const toggleMute = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    a.muted = !muted;
+    setMuted(!muted);
+    if (a.paused) a.play().catch(() => {});
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="relative h-dvh w-full overflow-hidden">
+      <Background />
+      <HeartTrail />
+
+      {config.music && (
+        <>
+          <audio ref={audioRef} src={config.music} loop preload="auto" />
+          {scene !== "lock" && (
+            <button
+              onClick={toggleMute}
+              aria-label={muted ? "unmute" : "mute"}
+              className="fixed right-4 top-4 z-50 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-lg backdrop-blur"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              {muted ? "🔇" : "🎵"}
+            </button>
+          )}
+        </>
+      )}
+
+      <AnimatePresence mode="wait">
+        {scene === "lock" && (
+          <Scene key="lock">
+            <LockScreen onUnlock={toChat} />
+          </Scene>
+        )}
+        {scene === "chat" && (
+          <Scene key="chat">
+            <Chat onDone={toTerminal} />
+          </Scene>
+        )}
+        {scene === "terminal" && (
+          <Scene key="terminal">
+            <Terminal onDone={toQuestion} />
+          </Scene>
+        )}
+        {scene === "question" && (
+          <Scene key="question">
+            <Balloons onYes={toVibe} />
+          </Scene>
+        )}
+        {scene === "vibe" && (
+          <Scene key="vibe">
+            <VibePicker onSelect={toContract} />
+          </Scene>
+        )}
+        {scene === "contract" && vibe && (
+          <Scene key="contract">
+            <Contract vibe={vibe} onSigned={toParty} />
+          </Scene>
+        )}
+        {scene === "party" && vibe && (
+          <Scene key="party">
+            <Celebration vibe={vibe} signature={signature} />
+          </Scene>
+        )}
+      </AnimatePresence>
+    </main>
   );
 }
