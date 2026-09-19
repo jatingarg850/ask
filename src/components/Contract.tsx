@@ -3,13 +3,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { config, type Vibe } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
+import { dayLabel, timeLabel } from "@/lib/when";
 
 type Props = {
   vibe: Vibe;
+  when: Date;
   onSigned: (signaturePng: string) => void;
 };
 
-export default function Contract({ vibe, onSigned }: Props) {
+export default function Contract({ vibe, when, onSigned }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [hasInk, setHasInk] = useState(false);
@@ -78,13 +81,14 @@ export default function Contract({ vibe, onSigned }: Props) {
   const seal = () => {
     if (!hasInk || sealed) return;
     setSealed(true);
+    sfx.stamp();
     if (navigator.vibrate) navigator.vibrate([40, 30, 90]);
     const png = canvasRef.current?.toDataURL("image/png") ?? "";
     setTimeout(() => onSigned(png), 1500);
   };
 
   return (
-    <div className="flex w-full max-w-md flex-col items-center gap-5 px-5 text-center">
+    <div className="flex w-full max-w-md flex-col items-center gap-5 px-5 pt-10 text-center">
       <motion.p
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -104,7 +108,7 @@ export default function Contract({ vibe, onSigned }: Props) {
           OFFICIAL DATE AGREEMENT
         </p>
         <p className="mt-1 text-center text-[11px] uppercase tracking-[0.25em] text-[#2a2230]/50">
-          {vibe.emoji} {vibe.title} · {config.date.whenLabel}
+          {vibe.emoji} {vibe.title} · {dayLabel(when)} · {timeLabel(when)}
         </p>
 
         <ol className="mt-4 space-y-2 text-[13px] leading-snug">
@@ -180,7 +184,7 @@ export default function Contract({ vibe, onSigned }: Props) {
         transition={{ scale: { duration: 1, repeat: Infinity } }}
         whileTap={hasInk ? { scale: 0.95 } : undefined}
         disabled={!hasInk || sealed}
-        className="rounded-full bg-gradient-to-r from-blush to-grape px-8 py-3.5 text-base font-semibold text-white shadow-[0_0_30px_rgba(255,92,138,0.45)] disabled:cursor-not-allowed"
+        className="btn-primary px-8 py-3.5 text-base"
       >
         {sealed ? "sealed 💋" : "seal the deal 💋"}
       </motion.button>

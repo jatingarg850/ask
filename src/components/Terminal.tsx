@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { config } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
+import { say } from "@/lib/voice";
 
 const lines = config.terminal.map((l) =>
   l.replaceAll("{her}", config.herName).replaceAll("{me}", config.yourName),
@@ -21,6 +23,8 @@ export default function Terminal({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     if (done) {
+      sfx.chime();
+      say("Access granted. Loading the question.", { pitch: 0.5, rate: 0.9 });
       const t = setTimeout(onDone, 1600);
       return () => clearTimeout(t);
     }
@@ -38,11 +42,11 @@ export default function Terminal({ onDone }: { onDone: () => void }) {
 
   return (
     <motion.div
-      className="w-full max-w-lg px-4"
+      className="w-full max-w-lg px-4 pt-10"
       animate={done ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : { x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="scanlines relative overflow-hidden rounded-2xl border border-white/12 bg-black/70 shadow-2xl backdrop-blur-xl">
+      <div className="glass scanlines relative overflow-hidden rounded-2xl !bg-[#160a2e]/80">
         {/* window chrome */}
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5">
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />

@@ -4,10 +4,11 @@
   --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 
-  --color-blush: #ff5c8a;
+  --color-blush: #ff6fa5;
   --color-peach: #ffb86b;
-  --color-grape: #8b5cf6;
-  --color-ink: #07060d;
+  --color-grape: #a78bfa;
+  --color-mint: #5eead4;
+  --color-ink: #1b0b3a;
 }
 
 html,
@@ -16,8 +17,8 @@ body {
 }
 
 body {
-  background: #07060d;
-  color: #fff5f7;
+  background: #2a0e55;
+  color: #fff7fb;
   overflow: hidden;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -26,16 +27,127 @@ body {
   -webkit-user-select: none;
 }
 
+/* ── the sky ─────────────────────────────────────────── */
+.sky {
+  background:
+    radial-gradient(120% 80% at 50% -10%, #5b1f8f 0%, transparent 60%),
+    radial-gradient(90% 60% at 100% 100%, #c2367a 0%, transparent 55%),
+    radial-gradient(80% 60% at 0% 100%, #ff8a5c 0%, transparent 55%),
+    linear-gradient(180deg, #2a0e55 0%, #4a1568 55%, #7a1f66 100%);
+}
+
+.twinkle {
+  animation: twinkle var(--dur, 3s) ease-in-out var(--delay, 0s) infinite;
+}
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+@layer components {
+  /* ── glass card with a gradient hairline border ──────── */
+  .glass {
+    position: relative;
+    background: rgba(255, 255, 255, 0.09);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    box-shadow:
+      0 20px 60px rgba(20, 5, 50, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      rgba(255, 111, 165, 0.45) 70%,
+      rgba(167, 139, 250, 0.55) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ── glossy gradient button ──────────────────────────── */
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: linear-gradient(120deg, #ff6fa5, #ffb86b, #a78bfa, #ff6fa5);
+    background-size: 300% 300%;
+    animation: gradient-shift 5s ease infinite;
+    color: #fff;
+    font-weight: 600;
+    box-shadow:
+      0 10px 30px rgba(255, 111, 165, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.2s ease;
+  }
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 50%;
+    background: linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .btn-primary:hover {
+    box-shadow:
+      0 14px 40px rgba(255, 111, 165, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  .btn-primary:active {
+    transform: scale(0.96);
+  }
+  .btn-primary:disabled {
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+      background 0.2s ease,
+      transform 0.15s ease;
+  }
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+  .btn-ghost:active {
+    transform: scale(0.96);
+  }
+}
+
 /* glowing text */
 .text-glow {
   text-shadow:
-    0 0 24px rgba(255, 92, 138, 0.55),
-    0 0 60px rgba(139, 92, 246, 0.35);
+    0 0 24px rgba(255, 111, 165, 0.6),
+    0 0 60px rgba(167, 139, 250, 0.4);
 }
 
 /* animated gradient text */
 .gradient-text {
-  background: linear-gradient(120deg, #ff5c8a, #ffb86b, #8b5cf6, #ff5c8a);
+  background: linear-gradient(120deg, #ffd1e3, #ffb86b, #c4b5fd, #ff6fa5, #ffd1e3);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -55,7 +167,7 @@ body {
   }
 }
 
-/* shimmer used on the loading bar */
+/* shimmer used on progress bars */
 .shimmer::after {
   content: "";
   position: absolute;
@@ -69,7 +181,6 @@ body {
   transform: translateX(-100%);
   animation: shimmer 1.4s infinite;
 }
-
 @keyframes shimmer {
   to {
     transform: translateX(100%);
@@ -80,10 +191,9 @@ body {
 .caret::after {
   content: "▍";
   margin-left: 2px;
-  color: #ff5c8a;
+  color: #ff6fa5;
   animation: blink 0.9s steps(2, start) infinite;
 }
-
 @keyframes blink {
   to {
     visibility: hidden;
@@ -96,24 +206,15 @@ body {
   mix-blend-mode: overlay;
 }
 
-/* ticket perforation */
-.perforation {
-  background-image: radial-gradient(
-    circle,
-    transparent 0 5px,
-    rgba(255, 255, 255, 0.06) 5px
-  );
-}
-
 /* iOS-style "slide to unlock" shine */
 .shine-text {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.45) 0%,
-    rgba(255, 255, 255, 0.45) 40%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.5) 40%,
     #fff 50%,
-    rgba(255, 255, 255, 0.45) 60%,
-    rgba(255, 255, 255, 0.45) 100%
+    rgba(255, 255, 255, 0.5) 60%,
+    rgba(255, 255, 255, 0.5) 100%
   );
   background-size: 250% 100%;
   -webkit-background-clip: text;
@@ -121,7 +222,6 @@ body {
   color: transparent;
   animation: shine 2.4s linear infinite;
 }
-
 @keyframes shine {
   from {
     background-position: 100% 0;
@@ -136,10 +236,9 @@ body {
   border-radius: 50% 50% 50% 50% / 45% 45% 55% 55%;
   box-shadow:
     inset -12px -14px 24px rgba(0, 0, 0, 0.22),
-    inset 6px 8px 16px rgba(255, 255, 255, 0.18),
-    0 16px 30px rgba(0, 0, 0, 0.35);
+    inset 6px 8px 16px rgba(255, 255, 255, 0.22),
+    0 16px 30px rgba(20, 5, 50, 0.4);
 }
-
 .balloon::after {
   content: "";
   position: absolute;
@@ -187,4 +286,12 @@ body {
     rgba(255, 255, 255, 0.035) 0 1px,
     transparent 1px 3px
   );
+}
+
+/* polaroid */
+.polaroid {
+  background: #fffdf8;
+  box-shadow:
+    0 24px 50px rgba(20, 5, 50, 0.5),
+    0 2px 6px rgba(0, 0, 0, 0.2);
 }

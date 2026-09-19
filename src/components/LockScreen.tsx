@@ -3,6 +3,7 @@
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { config } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
 
 const KNOB = 64;
 
@@ -56,6 +57,8 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
   const finish = () => {
     if (done.current) return;
     done.current = true;
+    sfx.unlockAudio();
+    sfx.unlock();
     if (navigator.vibrate) navigator.vibrate([20, 30, 70]);
     animate(x, max, { duration: 0.15 });
     setTimeout(onUnlock, 300);
@@ -106,7 +109,7 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
           scale: { delay: 1.1, type: "spring", stiffness: 220, damping: 18 },
           rotate: { delay: 2.4, duration: 0.7, repeat: Infinity, repeatDelay: 2.5 },
         }}
-        className="w-full max-w-sm rounded-3xl border border-white/15 bg-white/12 p-4 text-left shadow-2xl backdrop-blur-2xl"
+        className="glass w-full max-w-sm rounded-3xl p-4 text-left"
       >
         <div className="flex items-center gap-3">
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-blush to-grape text-xl shadow-lg">
@@ -134,7 +137,7 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
       >
         <div
           ref={trackRef}
-          className="relative h-18 w-full rounded-full border border-white/15 bg-white/10 backdrop-blur-xl"
+          className="glass relative h-18 w-full rounded-full"
         >
           <motion.span
             style={{ opacity: labelOpacity }}
@@ -166,7 +169,7 @@ export default function LockScreen({ onUnlock }: { onUnlock: () => void }) {
             </motion.span>
           </motion.div>
         </div>
-        <p className="mt-4 text-[11px] text-white/30">
+        <p className="mt-4 text-[11px] text-white/40">
           made with ♥ by {config.yourName}
         </p>
       </motion.div>

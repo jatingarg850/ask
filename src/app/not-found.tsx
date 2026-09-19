@@ -54,7 +54,7 @@ export default function NotFound() {
       >
         <Link
           href="/"
-          className="inline-block rounded-full bg-gradient-to-r from-blush to-grape px-8 py-3.5 text-base font-semibold text-white shadow-[0_0_40px_rgba(255,92,138,0.5)] transition hover:scale-105 active:scale-95"
+          className="btn-primary inline-block px-8 py-3.5 text-base"
         >
           take me to the question 💌
         </Link>

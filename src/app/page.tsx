@@ -2,25 +2,49 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Alert from "@/components/Alert";
 import Background from "@/components/Background";
 import Balloons from "@/components/Balloons";
 import Celebration from "@/components/Celebration";
 import Chat from "@/components/Chat";
 import Contract from "@/components/Contract";
 import HeartTrail from "@/components/HeartTrail";
+import Journey from "@/components/Journey";
 import LockScreen from "@/components/LockScreen";
+import Memories from "@/components/Memories";
+import Schedule from "@/components/Schedule";
 import Terminal from "@/components/Terminal";
 import VibePicker from "@/components/VibePicker";
 import { config, type Vibe } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
+import { hush } from "@/lib/voice";
+import { fallbackWhen } from "@/lib/when";
 
 type Scene =
   | "lock"
+  | "alert"
   | "chat"
+  | "memories"
   | "terminal"
   | "question"
   | "vibe"
+  | "schedule"
   | "contract"
   | "party";
+
+const hasPhotos = config.photos.length > 0;
+
+// the journey bar steps (lock screen + alert are the door, not steps)
+const JOURNEY: { scene: Scene; emoji: string }[] = [
+  { scene: "chat", emoji: "💬" },
+  ...(hasPhotos ? [{ scene: "memories" as Scene, emoji: "📸" }] : []),
+  { scene: "terminal", emoji: "💻" },
+  { scene: "question", emoji: "🎈" },
+  { scene: "vibe", emoji: "🎯" },
+  { scene: "schedule", emoji: "📅" },
+  { scene: "contract", emoji: "📜" },
+  { scene: "party", emoji: "🎉" },
+];
 
 function Scene({ children }: { children: React.ReactNode }) {
   return (
@@ -41,6 +65,7 @@ const TITLES = ["💌 open me", "👀 pls", "💌 it's important", "🥺 promise
 export default function Home() {
   const [scene, setScene] = useState<Scene>("lock");
   const [vibe, setVibe] = useState<Vibe | null>(null);
+  const [when, setWhen] = useState<Date | null>(null);
   const [signature, setSignature] = useState("");
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -55,15 +80,24 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
-  const toChat = useCallback(() => {
-    setScene("chat");
+  const toAlert = useCallback(() => {
+    setScene("alert");
     audioRef.current?.play().catch(() => {});
   }, []);
+  const toChat = useCallback(() => setScene("chat"), []);
+  const afterChat = useCallback(
+    () => setScene(hasPhotos ? "memories" : "terminal"),
+    [],
+  );
   const toTerminal = useCallback(() => setScene("terminal"), []);
   const toQuestion = useCallback(() => setScene("question"), []);
   const toVibe = useCallback(() => setScene("vibe"), []);
-  const toContract = useCallback((v: Vibe) => {
+  const toSchedule = useCallback((v: Vibe) => {
     setVibe(v);
+    setScene("schedule");
+  }, []);
+  const toContract = useCallback((d: Date) => {
+    setWhen(d);
     setScene("contract");
   }, []);
   const toParty = useCallback((png: string) => {
@@ -72,12 +106,19 @@ export default function Home() {
   }, []);
 
   const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    sfx.enabled = !next;
+    if (next) hush();
     const a = audioRef.current;
-    if (!a) return;
-    a.muted = !muted;
-    setMuted(!muted);
-    if (a.paused) a.play().catch(() => {});
+    if (a) {
+      a.muted = next;
+      if (a.paused && !next) a.play().catch(() => {});
+    }
   };
+
+  const journeyIdx = JOURNEY.findIndex((j) => j.scene === scene);
+  const dateWhen = when ?? fallbackWhen();
 
   return (
     <main className="relative h-dvh w-full overflow-hidden">
@@ -85,29 +126,37 @@ export default function Home() {
       <HeartTrail />
 
       {config.music && (
-        <>
-          <audio ref={audioRef} src={config.music} loop preload="auto" />
-          {scene !== "lock" && (
-            <button
-              onClick={toggleMute}
-              aria-label={muted ? "unmute" : "mute"}
-              className="fixed right-4 top-4 z-50 grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/10 text-lg backdrop-blur"
-            >
-              {muted ? "🔇" : "🎵"}
-            </button>
-          )}
-        </>
+        <audio ref={audioRef} src={config.music} loop preload="auto" />
+      )}
+
+      {journeyIdx >= 0 && (
+        <Journey
+          steps={JOURNEY.map((j) => j.emoji)}
+          current={journeyIdx}
+          muted={muted}
+          onToggleMute={toggleMute}
+        />
       )}
 
       <AnimatePresence mode="wait">
         {scene === "lock" && (
           <Scene key="lock">
-            <LockScreen onUnlock={toChat} />
+            <LockScreen onUnlock={toAlert} />
+          </Scene>
+        )}
+        {scene === "alert" && (
+          <Scene key="alert">
+            <Alert onDone={toChat} />
           </Scene>
         )}
         {scene === "chat" && (
           <Scene key="chat">
-            <Chat onDone={toTerminal} />
+            <Chat onDone={afterChat} />
+          </Scene>
+        )}
+        {scene === "memories" && (
+          <Scene key="memories">
+            <Memories onDone={toTerminal} />
           </Scene>
         )}
         {scene === "terminal" && (
@@ -122,17 +171,22 @@ export default function Home() {
         )}
         {scene === "vibe" && (
           <Scene key="vibe">
-            <VibePicker onSelect={toContract} />
+            <VibePicker onSelect={toSchedule} />
+          </Scene>
+        )}
+        {scene === "schedule" && (
+          <Scene key="schedule">
+            <Schedule onDone={toContract} />
           </Scene>
         )}
         {scene === "contract" && vibe && (
           <Scene key="contract">
-            <Contract vibe={vibe} onSigned={toParty} />
+            <Contract vibe={vibe} when={dateWhen} onSigned={toParty} />
           </Scene>
         )}
         {scene === "party" && vibe && (
           <Scene key="party">
-            <Celebration vibe={vibe} signature={signature} />
+            <Celebration vibe={vibe} when={dateWhen} signature={signature} />
           </Scene>
         )}
       </AnimatePresence>

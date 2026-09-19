@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { config, type Vibe } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
 
 export default function VibePicker({
   onSelect,
@@ -19,6 +20,7 @@ export default function VibePicker({
   const choose = (v: Vibe) => {
     if (picked) return;
     setPicked(v.id);
+    sfx.chime();
     if (navigator.vibrate) navigator.vibrate(30);
     setTimeout(() => onSelect(v), 1000);
   };
@@ -36,6 +38,7 @@ export default function VibePicker({
     const tick = () => {
       idx = (idx + 1) % n;
       setSpinIdx(idx);
+      sfx.blip();
       step++;
       if (step >= totalSteps) {
         spinning.current = false;
@@ -50,7 +53,7 @@ export default function VibePicker({
   };
 
   return (
-    <div className="flex w-full max-w-2xl flex-col items-center gap-7 px-5 text-center">
+    <div className="flex w-full max-w-2xl flex-col items-center gap-6 px-5 pt-10 text-center">
       <motion.div
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -119,7 +122,7 @@ export default function VibePicker({
         transition={{ delay: 0.6 }}
         onClick={spin}
         whileTap={{ scale: 0.95 }}
-        className="rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm text-white/80 backdrop-blur transition hover:bg-white/10"
+        className="btn-ghost px-6 py-3 text-sm text-white/85"
       >
         🎰 can&rsquo;t decide? spin for me
       </motion.button>

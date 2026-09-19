@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { config } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
 
 type Msg = { id: number; from: "me" | "her"; text: string };
 
@@ -30,6 +31,7 @@ export default function Chat({ onDone }: { onDone: () => void }) {
     const t2 = setTimeout(
       () => {
         setTyping(false);
+        sfx.blip();
         setMsgs((m) => [...m, { id: step, from: "me", text: s }]);
         setStep((x) => x + 1);
       },
@@ -54,7 +56,7 @@ export default function Chat({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div className="flex h-[86dvh] w-full max-w-md flex-col overflow-hidden rounded-[2rem] border border-white/12 bg-black/40 shadow-2xl backdrop-blur-xl">
+    <div className="glass flex h-[82dvh] w-full max-w-md flex-col overflow-hidden rounded-[2rem]">
       {/* header */}
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-3.5">
         <div className="relative grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-blush to-grape font-semibold">
@@ -81,7 +83,7 @@ export default function Chat({ onDone }: { onDone: () => void }) {
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
               className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-[15px] leading-snug ${
                 m.from === "me"
-                  ? "self-start rounded-bl-md bg-white/12 text-white"
+                  ? "self-start rounded-bl-md bg-white/14 text-white"
                   : "self-end rounded-br-md bg-gradient-to-br from-blush to-grape text-white"
               }`}
             >
@@ -122,7 +124,7 @@ export default function Chat({ onDone }: { onDone: () => void }) {
                   key={c}
                   onClick={() => reply(c)}
                   whileTap={{ scale: 0.93 }}
-                  className="rounded-full border border-blush/60 bg-blush/15 px-4 py-2 text-sm text-white transition hover:bg-blush/30"
+                  className="btn-primary px-4 py-2 text-sm"
                 >
                   {c}
                 </motion.button>

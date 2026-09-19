@@ -4,6 +4,8 @@ import confetti from "canvas-confetti";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { config } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
+import { say } from "@/lib/voice";
 import YesNo from "./YesNo";
 
 const words = config.question.split(" ");
@@ -47,7 +49,12 @@ export default function Balloons({ onYes }: { onYes: () => void }) {
 
   const pop = (i: number, e: React.PointerEvent) => {
     if (popped[i]) return;
-    setPopped((p) => p.map((v, j) => (j === i ? true : v)));
+    const next = popped.map((v, j) => (j === i ? true : v));
+    setPopped(next);
+    sfx.pop();
+    if (next.every(Boolean)) {
+      setTimeout(() => say(config.question, { pitch: 0.9, rate: 0.9 }), 700);
+    }
     if (navigator.vibrate) navigator.vibrate(18);
     confetti({
       particleCount: 26,
@@ -65,7 +72,7 @@ export default function Balloons({ onYes }: { onYes: () => void }) {
   };
 
   return (
-    <div className="flex h-full w-full max-w-xl flex-col items-center px-4 pt-6 text-center">
+    <div className="flex h-full w-full max-w-xl flex-col items-center px-4 pt-14 text-center">
       {/* the sentence being revealed */}
       <motion.p
         initial={{ opacity: 0, y: -10 }}

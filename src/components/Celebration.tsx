@@ -2,11 +2,13 @@
 
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { config, type Vibe } from "@/lib/config";
+import { sfx } from "@/lib/sfx";
+import { dayLabel, timeLabel } from "@/lib/when";
 import ScratchCard from "./ScratchCard";
 
-const COLORS = ["#ff5c8a", "#ffb86b", "#8b5cf6", "#22d3ee", "#ffffff"];
+const COLORS = ["#ff6fa5", "#ffb86b", "#a78bfa", "#5eead4", "#ffd166", "#ffffff"];
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -20,8 +22,7 @@ function toCalStamp(d: Date) {
   );
 }
 
-function eventDetails(vibe: Vibe) {
-  const start = new Date(config.date.startISO);
+function eventDetails(vibe: Vibe, start: Date) {
   const end = new Date(start.getTime() + config.date.durationHours * 3600_000);
   return {
     start,
@@ -32,8 +33,8 @@ function eventDetails(vibe: Vibe) {
   };
 }
 
-function googleCalendarUrl(vibe: Vibe) {
-  const e = eventDetails(vibe);
+function googleCalendarUrl(vibe: Vibe, when: Date) {
+  const e = eventDetails(vibe, when);
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: e.title,
@@ -44,8 +45,8 @@ function googleCalendarUrl(vibe: Vibe) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function downloadIcs(vibe: Vibe) {
-  const e = eventDetails(vibe);
+function downloadIcs(vibe: Vibe, when: Date) {
+  const e = eventDetails(vibe, when);
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -70,23 +71,44 @@ function downloadIcs(vibe: Vibe) {
   URL.revokeObjectURL(url);
 }
 
-function whatsappUrl(vibe: Vibe) {
+function whatsappUrl(vibe: Vibe, when: Date) {
   const msg =
     `YES!!! 💖 I'll go on a date with you.\n` +
-    `${vibe.emoji} ${vibe.title} — ${config.date.whenLabel}, ${config.date.timeLabel}.\n` +
+    `${vibe.emoji} ${vibe.title} — ${dayLabel(when)}, ${timeLabel(when)}.\n` +
     `Signed, sealed, delivered. Don't be late 😏`;
   return `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(msg)}`;
 }
 
-type Props = { vibe: Vibe; signature: string };
+function daysTogether() {
+  if (!config.sinceISO) return 0;
+  const since = new Date(config.sinceISO).getTime();
+  if (Number.isNaN(since)) return 0;
+  return Math.max(1, Math.floor((Date.now() - since) / 86_400_000) + 1);
+}
 
-export default function Celebration({ vibe, signature }: Props) {
+type Props = { vibe: Vibe; when: Date; signature: string };
+
+export default function Celebration({ vibe, when, signature }: Props) {
+  const headRef = useRef<HTMLDivElement>(null);
+  const [notchY, setNotchY] = useState(0);
+  const days = daysTogether();
+
+  // real punched notches on the ticket: mask two circles where the perforation is
   useEffect(() => {
+    const el = headRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setNotchY(el.offsetHeight + 12));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    sfx.tada();
     if (navigator.vibrate) navigator.vibrate([60, 40, 60, 40, 140]);
 
     // opening burst
     confetti({
-      particleCount: 200,
+      particleCount: 220,
       spread: 120,
       startVelocity: 50,
       origin: { y: 0.65 },
@@ -128,6 +150,10 @@ export default function Celebration({ vibe, signature }: Props) {
     };
   }, []);
 
+  const mask = notchY
+    ? `radial-gradient(circle at 0 ${notchY}px, transparent 11px, #000 12px), radial-gradient(circle at 100% ${notchY}px, transparent 11px, #000 12px)`
+    : undefined;
+
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-6 px-5 py-4 text-center">
       <motion.div
@@ -135,12 +161,33 @@ export default function Celebration({ vibe, signature }: Props) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 140, damping: 11 }}
       >
+        <div className="mb-2 flex justify-center gap-2 text-3xl">
+          {["🎉", "💃", "🥳", "🕺", "🎉"].map((e, i) => (
+            <motion.span
+              key={i}
+              animate={{ y: [0, -14, 0], rotate: [0, i % 2 ? 12 : -12, 0] }}
+              transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
+            >
+              {e}
+            </motion.span>
+          ))}
+        </div>
         <p className="gradient-text font-serif text-5xl font-bold sm:text-6xl">
           It&rsquo;s a date!
         </p>
-        <p className="mt-2 text-white/60">
+        <p className="mt-2 text-white/70">
           You just made my whole year, {config.herName}.
         </p>
+        {days > 0 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="mt-1 text-xs text-white/50"
+          >
+            day {days} of us, and counting 🥰
+          </motion.p>
+        )}
       </motion.div>
 
       {/* the ticket */}
@@ -148,10 +195,16 @@ export default function Celebration({ vibe, signature }: Props) {
         initial={{ opacity: 0, y: 60, rotate: -5 }}
         animate={{ opacity: 1, y: 0, rotate: 0 }}
         transition={{ delay: 0.35, type: "spring", stiffness: 120, damping: 14 }}
-        className="relative w-full overflow-hidden rounded-3xl border border-white/15 bg-white/[0.07] shadow-2xl backdrop-blur-xl"
+        className="glass relative w-full overflow-hidden rounded-3xl"
+        style={{
+          WebkitMaskImage: mask,
+          WebkitMaskComposite: mask ? "source-in" : undefined,
+          maskImage: mask,
+          maskComposite: mask ? "intersect" : undefined,
+        }}
       >
-        <div className={`bg-gradient-to-r ${vibe.gradient} p-5 text-left`}>
-          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.35em] text-white/80">
+        <div ref={headRef} className={`bg-gradient-to-r ${vibe.gradient} p-5 text-left`}>
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.35em] text-white/85">
             <span>Admit two</span>
             <span>No refunds</span>
           </div>
@@ -161,23 +214,21 @@ export default function Celebration({ vibe, signature }: Props) {
               <p className="font-serif text-2xl font-semibold text-white">
                 {vibe.title}
               </p>
-              <p className="text-xs text-white/85">{vibe.desc}</p>
+              <p className="text-xs text-white/90">{vibe.desc}</p>
             </div>
           </div>
         </div>
 
         {/* perforation */}
-        <div className="relative flex items-center">
-          <span className="absolute -left-3 h-6 w-6 rounded-full bg-ink" />
-          <span className="mx-4 h-0 w-full border-t-2 border-dashed border-white/20" />
-          <span className="absolute -right-3 h-6 w-6 rounded-full bg-ink" />
+        <div className="flex h-6 items-center px-5">
+          <span className="w-full border-t-2 border-dashed border-white/25" />
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 p-5 text-left">
-          <Field label="When" value={config.date.whenLabel} />
-          <Field label="Time" value={config.date.timeLabel} />
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4 px-5 pb-5 pt-2 text-left">
+          <Field label="When" value={dayLabel(when)} />
+          <Field label="Time" value={timeLabel(when)} />
           <div className="col-span-2">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">
               Where
             </p>
             <ScratchCard
@@ -186,14 +237,14 @@ export default function Celebration({ vibe, signature }: Props) {
               sub=""
               brush={18}
             >
-              <p className="rounded-xl bg-white/5 px-3 py-2.5 font-medium text-white">
+              <p className="rounded-xl bg-white/10 px-3 py-2.5 font-medium text-white">
                 {config.date.where}
               </p>
             </ScratchCard>
           </div>
           <Field label="With" value={config.yourName} />
           <div>
-            <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">
               Signed by {config.herName}
             </p>
             {signature ? (
@@ -209,7 +260,7 @@ export default function Celebration({ vibe, signature }: Props) {
           </div>
         </div>
 
-        <div className="border-t border-white/10 px-5 py-3 text-left text-xs text-white/60">
+        <div className="border-t border-white/10 px-5 py-3 text-left text-xs text-white/70">
           {config.ps}
         </div>
       </motion.div>
@@ -222,29 +273,29 @@ export default function Celebration({ vibe, signature }: Props) {
       >
         {config.whatsapp && (
           <a
-            href={whatsappUrl(vibe)}
+            href={whatsappUrl(vibe, when)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold text-black transition hover:brightness-110 active:scale-95"
+            className="rounded-full bg-[#25D366] px-6 py-3.5 text-sm font-semibold text-black shadow-[0_10px_30px_rgba(37,211,102,0.35)] transition hover:brightness-110 active:scale-95"
           >
             💬 Send my answer on WhatsApp
           </a>
         )}
         <a
-          href={googleCalendarUrl(vibe)}
+          href={googleCalendarUrl(vibe, when)}
           target="_blank"
           rel="noreferrer"
-          className="rounded-full bg-white px-6 py-3.5 text-sm font-semibold text-black transition hover:bg-white/90 active:scale-95"
+          className="btn-primary px-6 py-3.5 text-sm"
         >
           📅 Add to Google Calendar
         </a>
         <button
-          onClick={() => downloadIcs(vibe)}
-          className="rounded-full border border-white/20 bg-white/5 px-6 py-3.5 text-sm text-white/90 backdrop-blur transition hover:bg-white/10 active:scale-95"
+          onClick={() => downloadIcs(vibe, when)}
+          className="btn-ghost px-6 py-3.5 text-sm text-white/90"
         >
            Add to Apple Calendar (.ics)
         </button>
-        <p className="mt-1 text-xs text-white/40">
+        <p className="mt-1 text-xs text-white/50">
           now screenshot this and send it to me 📸
         </p>
       </motion.div>
@@ -255,7 +306,7 @@ export default function Celebration({ vibe, signature }: Props) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-[0.3em] text-white/40">
+      <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">
         {label}
       </p>
       <p className="mt-0.5 font-medium text-white">{value}</p>
