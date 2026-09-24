@@ -18,8 +18,8 @@ export type Photo = { src: string; caption: string };
 
 export const config = {
   // ── names ────────────────────────────────────────────────
-  herName: "Riddhima Mishra", // 👈 put her name here, e.g. "Priya"
-  yourName: "Jatin Garg", // 👈 your name
+  herName: "Avantika", // 👈 put her name here, e.g. "Priya"
+  yourName: "Siddhant srivastav", // 👈 your name
 
   // ── scene 1: lock screen notification ───────────────────
   lockMessage: "I need to ask you something important… 👀 unlock me",
